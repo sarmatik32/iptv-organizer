@@ -34,7 +34,7 @@ GENRES = [
     ("Музичні", ("музичн", "музыкальн", "music", "concert", "концерт")),
 ]
 
-MOVIE_GROUP = re.compile(r"(фильм|фільм|кино\s*зал|kino\s*zal|кинозал|kino\+|4k\s*kino)", re.I)
+MOVIE_GROUP = re.compile(r"(фильм|фільм|кино\s*зал|kino\s*zal|кинозал|4k\s*kino)", re.I)
 COUNTRY_GROUP = {
     "ua", "ukr", "ukraine", "украина", "україна", "us", "usa", "сша",
     "uk", "united kingdom", "великобритания", "велика британія",
@@ -136,7 +136,7 @@ def classify(group: str, name: str, url: str) -> str:
         return "ТБ | Загальні"
     if group_value in {"default", "undefined", "none", "other", "others", "разное", "різне", ""}:
         return "ТБ | Загальні"
-    if re.search(r"(test|тест|vpn|uplink|internet|telecom|нет|оргтех|datacamp|turon|инет)", group, re.I):
+    if re.search(r"(test|тест|vpn|uplink|internet|telecom|нет|оргтех|datacamp|turon|инет|велком)", group, re.I):
         return "ТБ | Загальні"
     return group.strip()
 
