@@ -16,6 +16,7 @@ OUTPUT_FILE = Path(os.getenv("OUTPUT_FILE", "dist/iptv-sorted.m3u"))
 TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "120"))
 PROBE_TIMEOUT = float(os.getenv("PROBE_TIMEOUT", "5"))
 PROBE_WORKERS = max(1, min(16, int(os.getenv("PROBE_WORKERS", "8"))))
+PROBE_LIMIT = max(0, int(os.getenv("PROBE_LIMIT", "300")))
 MAX_BYTES = 150 * 1024 * 1024
 
 GENRES = [
@@ -221,7 +222,8 @@ def organize(source: str) -> tuple[str, Counter[str]]:
         raise ValueError("У вихідному M3U не знайдено жодного запису")
 
     prepared = []
-    probe_urls = set()
+    probe_candidates = []
+    seen_probe_urls = set()
     for extinf, url in entries:
         group, name = metadata(extinf)
         base_category = classify(group, name, url)
@@ -230,6 +232,7 @@ def organize(source: str) -> tuple[str, Counter[str]]:
             probe_urls.add(url)
         prepared.append((extinf, url, group, name, base_category, stream_type))
 
+    probe_urls = probe_candidates[:PROBE_LIMIT]
     probe_results = {}
     if probe_urls:
         with concurrent.futures.ThreadPoolExecutor(max_workers=PROBE_WORKERS) as executor:
