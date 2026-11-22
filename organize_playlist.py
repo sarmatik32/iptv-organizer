@@ -242,10 +242,12 @@ def organize(source: str) -> tuple[str, Counter[str]]:
     grouped: dict[str, list[tuple[str, str, str]]] = {}
     for extinf, url, group, name, base_category, stream_type in prepared:
         probed_type, seekability = probe_results.get(url, ("UNKNOWN", "unknown"))
-        if probed_type in {"LIVE", "VOD"}:
+        if url in probe_results:
             stream_type = probed_type
         quality = quality_for(extinf, group, name, url)
-        category = f"{quality} | {stream_type} | {base_category}"
+        seek_label = "так" if seekability == "yes" else "не підтверджено"
+        vod_seek_group = f" | Перемотування: {seek_label}" if stream_type == "VOD" else ""
+        category = f"{quality} | {stream_type}{vod_seek_group} | {base_category}"
         rewritten = rewrite_extinf(extinf, category)
         grouped.setdefault(category, []).append((name.casefold(), rewritten, url))
 
