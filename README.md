@@ -1,48 +1,45 @@
 # IPTV Organizer
 
-Automatic M3U playlist downloader and genre sorter.
+Automatically downloads the source M3U and publishes a sorted playlist at `dist/iptv-sorted.m3u`.
 
-## Categories
+## Sorting
 
-The playlist is grouped by content, **not by country**:
+The playlist is grouped by content type and genre, **not by country**:
 
-- Films: action, comedy, drama, thriller, horror, science fiction, fantasy, detective/crime, adventure, romance, historical/war, documentary, biography and other genres.
-- Series: the same genre groups.
-- Cartoons, anime and kids.
-- Music, sport, news, educational, entertainment and radio.
-- Original meaningful source group names are retained as a fallback; unknown entries go to "Інше".
+- Films: action, comedy, drama, thriller, horror, science fiction, fantasy, detective/crime, adventure, romance, historical/war, documentary, biography, western, family, music and other genres.
+- Series: genre groups.
+- Separate categories: cartoons, anime, kids, 18+, cinema channels, music, sports, news, educational, entertainment, cooking, radio and general TV.
+- Country-only source groups are merged into general TV. Country metadata is never used as an output category.
 
-The sorter intentionally ignores `tvg-country`, country names and country codes.
+The source sometimes provides only a film title and year, without a genre tag. Such entries are kept in `Фільми | Інші жанри`; the organizer does not invent genres.
 
 ## Permanent M3U URL
 
 `https://raw.githubusercontent.com/sarmatik32/iptv-organizer/main/dist/iptv-sorted.m3u`
 
-The link becomes available after the first successful GitHub Actions run.
-
 ## Automatic updates
 
-GitHub Actions runs every six hours (UTC) and can also be started manually:
+GitHub Actions runs every six hours (UTC) and can be started manually:
 
 **Actions → Update sorted IPTV playlist → Run workflow**
 
-Workflow permissions required:
+The workflow validates that the generated file is a valid, non-empty M3U with at least 1,000 entries before publishing.
+
+Required repository setting:
 
 **Settings → Actions → General → Workflow permissions → Read and write permissions**
 
-The workflow verifies the generated M3U before committing it. A failed download or invalid source fails the job and does not replace the last valid playlist.
-
 ## Source
-
-Default source:
 
 `https://raw.githubusercontent.com/slava-67/TV/IPTV/avto-full.m3u`
 
-Optional repository Actions variable: `SOURCE_URL`.
+The branch name is `IPTV`, and the file path is `avto-full.m3u`.
+
+Optional Actions variable: `SOURCE_URL`.
 
 ## Local execution
 
-Python 3.10+; no external dependencies:
+Python 3.10+; no third-party dependencies:
 
 ```bash
 python organize_playlist.py
