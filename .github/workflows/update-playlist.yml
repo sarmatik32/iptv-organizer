@@ -1,0 +1,42 @@
+name: Update sorted IPTV playlist
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'organize_playlist.py'
+      - '.github/workflows/update-playlist.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-iptv-playlist
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate sorted playlist
+        run: python organize_playlist.py
+      - name: Commit updated playlist
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/iptv-sorted.m3u
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update sorted IPTV playlist"
+            git push
+          else
+            echo 'Playlist has no changes.'
+          fi
