@@ -50,10 +50,23 @@ def contains(value: str, words: tuple[str, ...]) -> bool:
 
 def genre_for(value: str) -> str:
     value = value.casefold()
-    for genre, words in GENRES:
-        if contains(value, words):
-            return genre
-    return "Інші жанри"
+    segments = [part.strip() for part in re.split(r"[|/,;]", value) if part.strip()]
+    for segment in segments:
+        matches = [
+            (segment.find(word), genre)
+            for genre, words in GENRES
+            for word in words
+            if segment.find(word) >= 0
+        ]
+        if matches:
+            return min(matches, key=lambda item: item[0])[1]
+    matches = [
+        (value.find(word), genre)
+        for genre, words in GENRES
+        for word in words
+        if value.find(word) >= 0
+    ]
+    return min(matches, key=lambda item: item[0])[1] if matches else "Інші жанри"
 
 def parse_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
     lines = text.lstrip("\ufeff").splitlines()
@@ -116,10 +129,10 @@ def classify(group: str, name: str, url: str) -> str:
         return "Кулінарія"
     if contains(value, ("розваж", "развлек", "entertainment", "show", "шоу", "реаліті", "реалити", "reality", "гумор", "юмор")):
         return "Розважальні"
-    if contains(value, ("кино", "кіно", "movie", "film", "cinema")):
+    if contains(value, ("кино", "кіно", "movie", "film", "cinema", "kino+", "кіно+", "киноканал", "кіно канал")):
         return "Кіно та серіали"
 
-    if group_value in COUNTRY_GROUP or re.search(r"[🇺🇦🇺🇸🇬🇧🇩🇪🇫🇷🇵🇱🇮🇹🇪🇸🇹🇷🇨🇦🇨🇿🇳🇱🇷🇴🇦🇲🇺🇿🇦🇿]", group):
+    if group_value in COUNTRY_GROUP or group_value == "общие" or re.match(r"^[tт]ест", group_value, re.I) or re.search(r"[🇺🇦🇺🇸🇬🇧🇩🇪🇫🇷🇵🇱🇮🇹🇪🇸🇹🇷🇨🇦🇨🇿🇳🇱🇷🇴🇦🇲🇺🇿🇦🇿]", group):
         return "ТБ | Загальні"
     if group_value in {"default", "undefined", "none", "other", "others", "разное", "різне", ""}:
         return "ТБ | Загальні"
