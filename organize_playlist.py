@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download and organize an M3U playlist into stable, human-readable groups. Version 2.1."""
+"""Download and sort an IPTV M3U playlist by content genre."""
 from __future__ import annotations
 
 import os
@@ -12,48 +12,43 @@ from pathlib import Path
 
 SOURCE_URL = os.getenv("SOURCE_URL", "https://raw.githubusercontent.com/slava-67/TV/IPTV/avto-full.m3u")
 OUTPUT_FILE = Path(os.getenv("OUTPUT_FILE", "dist/iptv-sorted.m3u"))
-TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "90"))
-MAX_BYTES = 100 * 1024 * 1024
+TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "120"))
+MAX_BYTES = 150 * 1024 * 1024
 
-COUNTRIES = {
-    "Україна": [r"україн", r"ukraine", r"\bua\b", r"\bukr\b"],
-    "США": [r"сша", r"united states", r"\busa\b", r"\bus\b"],
-    "Велика Британія": [r"велика британія", r"united kingdom", r"\buk\b", r"britain", r"англія"],
-    "Німеччина": [r"німеччин", r"germany", r"\bde\b"],
-    "Франція": [r"франці", r"france", r"\bfr\b"],
-    "Польща": [r"польщ", r"poland", r"\bpl\b"],
-    "Італія": [r"італі", r"italy", r"\bit\b"],
-    "Іспанія": [r"іспані", r"spain", r"\bes\b"],
-    "Туреччина": [r"туреччин", r"turkey", r"\btr\b"],
-    "Канада": [r"канада", r"canada", r"\bca\b"],
-    "Австралія": [r"австралі", r"australia", r"\bau\b"],
-    "Японія": [r"япон", r"japan", r"\bjp\b"],
-    "Південна Корея": [r"південна корея", r"south korea", r"\bkr\b"],
-    "Китай": [r"китай", r"china", r"\bcn\b"],
-    "Індія": [r"інді", r"india", r"\bin\b"],
-    "Румунія": [r"румун", r"romania", r"\bro\b"],
-    "Чехія": [r"чех", r"czech", r"\bcz\b"],
-    "Нідерланди": [r"нідерланд", r"netherlands", r"holland", r"\bnl\b"],
-    "Бельгія": [r"бельгі", r"belgium", r"\bbe\b"],
-    "Швеція": [r"швеці", r"sweden", r"\bse\b"],
-    "Норвегія": [r"норвегі", r"norway", r"\bno\b"],
-    "Інші країни": [],
-}
-COUNTRY_PATTERNS = {name: [re.compile(p, re.I) for p in patterns] for name, patterns in COUNTRIES.items() if patterns}
+# Specific genres are checked before broad categories.
 GENRES = [
-    ("Бойовики", ["бойовик", "екшн", "action"]),
-    ("Комедії", ["комеді", "comedy"]),
-    ("Драми", ["драма", "drama"]),
-    ("Трилери", ["трилер", "thriller"]),
-    ("Фантастика та фентезі", ["фантаст", "фентезі", "sci-fi", "science fiction", "fantasy"]),
-    ("Жахи", ["жах", "horror"]),
-    ("Детективи та кримінал", ["детектив", "кримінал", "crime", "mystery"]),
-    ("Пригоди", ["пригод", "adventure"]),
-    ("Мелодрами", ["мелодрам", "романтич", "romance"]),
-    ("Документальні", ["документал", "documentary"]),
-    ("Історичні та воєнні", ["історич", "воєн", "військов", "history", "war"]),
+    ("Бойовики", ("бойовик", "боевик", "action", "екшн", "приключенческий боевик")),
+    ("Комедії", ("комеді", "комеди", "comedy", "юмор", "sitcom", "ситком")),
+    ("Драми", ("драма", "drama", "мелодрама", "melodrama")),
+    ("Трилери", ("трилер", "триллер", "thriller", "suspense")),
+    ("Жахи", ("жах", "ужас", "horror", "страшилки")),
+    ("Фантастика", ("фантаст", "sci-fi", "science fiction", "научная фантастика")),
+    ("Фентезі", ("фентез", "фэнтези", "fantasy", "казк")),
+    ("Детективи та кримінал", ("детектив", "кримінал", "криминал", "crime", "detective", "mystery", "нуар")),
+    ("Пригоди", ("пригод", "adventure")),
+    ("Мелодрами та романтика", ("романтик", "romance", "любов", "мелодрам")),
+    ("Історичні та воєнні", ("історич", "историчес", "воєн", "военн", "war", "history")),
+    ("Документальні", ("документ", "documentary", "науково-популяр")),
+    ("Біографічні", ("біограф", "биограф", "biography", "biopic")),
+    ("Музичні", ("музичн", "музыкальн", "music", "concert", "концерт")),
+    ("Спортивні", ("спорт", "sport", "football", "футбол", "boxing", "бокс")),
+    ("Анімація", ("анімац", "анимац", "animation", "cartoon", "мультф", "мультик")),
+    ("Аніме", ("аніме", "аниме", "anime", "manga")),
+    ("Дитячі", ("дитяч", "детск", "kids", "children", "baby")),
 ]
 
+CATEGORY_RULES = [
+    ("Аніме", ("аніме", "аниме", "anime", "manga")),
+    ("Мультфільми", ("мультф", "мультик", "cartoon", "animation", "анімац", "анимац")),
+    ("Дитячі", ("дитяч", "детск", "kids", "children", "baby", "junior")),
+    ("Музика", ("музик", "музык", "music", "mtv", "concert", "концерт", "шлягер")),
+    ("Спорт", ("спорт", "sport", "football", "футбол", "boxing", "бокс", "hockey", "хокей", "tennis", "теннис")),
+    ("Новини", ("новин", "новост", "news", "інформац", "информац", "newsroom")),
+    ("Пізнавальні", ("пізнав", "познав", "наук", "science", "discovery", "history", "істор", "истор", "nature", "природ", "animal", "тварин", "документ")),
+    ("Розважальні", ("розваж", "развлек", "entertainment", "show", "шоу", "реаліті", "реалити", "reality", "гумор", "юмор", "комеді", "комеди")),
+    ("Кіно", ("фільм", "фильм", "кіно", "кино", "movie", "movies", "film", "vod", "відеотека", "видеотека", "serial", "серіал", "сериал", "series")),
+    ("Радіо", ("радіо", "радио", "radio")),
+]
 
 def parse_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
     lines = text.lstrip("\ufeff").splitlines()
@@ -66,6 +61,8 @@ def parse_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
         if not line:
             continue
         if line.startswith("#EXTINF:"):
+            if pending:
+                pending = []
             pending = [line]
         elif line.startswith("#"):
             if pending:
@@ -83,50 +80,53 @@ def metadata(extinf: str) -> tuple[str, str]:
     return group, name
 
 
-def country_for(value: str) -> str | None:
-    for country, patterns in COUNTRY_PATTERNS.items():
-        if any(pattern.search(value) for pattern in patterns):
-            return country
-    return None
+def has_any(value: str, words: tuple[str, ...]) -> bool:
+    return any(word in value for word in words)
+
+
+def genre_for(value: str) -> str:
+    for genre, words in GENRES:
+        if has_any(value, words):
+            return genre
+    return "Інші жанри"
 
 
 def classify(group: str, name: str, url: str, extinf: str) -> str:
+    # Do not use country names, country codes or tvg-country in classification.
     hay = f"{group} {name}".casefold()
-    country_hint = ""
-    for attribute in ("tvg-country", "country"):
-        match = re.search(rf'{attribute}="([^"]+)"', extinf, re.I)
-        if match:
-            country_hint = match.group(1)
-            break
-    country = country_for(f"{country_hint} {hay}") or "Інші країни"
+    compact_group = group.strip().casefold()
 
-    if any(word in hay for word in ("мультф", "анімац", "cartoon", "animation", "anime", "аніме")):
+    # Keep broad content types separate; use genre for movies/series where detectable.
+    if has_any(hay, ("аніме", "аниме", "anime", "manga")):
+        return "Аніме"
+    if has_any(hay, ("мультф", "мультик", "cartoon", "animation", "анімац", "анимац")):
         return "Мультфільми"
-    if any(word in hay for word in ("дитяч", "kids", "children", "baby")):
+    if has_any(hay, ("дитяч", "детск", "kids", "children", "baby", "junior")):
         return "Дитячі"
-    if any(word in hay for word in ("муз", "music", "mtv", "музич")):
-        return "Музика"
-    if any(word in hay for word in ("радіо", "radio")):
+    if has_any(hay, ("радіо", "радио", "radio")):
         return "Радіо"
-    if any(word in hay for word in ("новин", "news", "інформац", "інфо")):
-        return "Новини"
-    if any(word in hay for word in ("спорт", "sport", "football", "футбол")):
-        return "Спорт"
-    if any(word in hay for word in ("регіон", "облас", "міст", "local")):
-        return "Регіональні"
 
-    movie_markers = ("фільм", "фильм", "кіно", "kino", "movie", "film", "серіал", "series", "vod", "kino zal")
-    movie_url_markers = ("/films/", "/film/", "/movies/", "/series/", "/vod/")
-    if any(word in hay for word in movie_markers) or any(word in url.casefold() for word in movie_url_markers):
-        genre = next((label for label, words in GENRES if any(word in hay for word in words)), "Інші фільми")
-        return f"Фільми | {country} | {genre}"
+    movie_markers = ("фільм", "фильм", "кіно", "кино", "movie", "movies", "film", "vod", "відеотека", "видеотека")
+    series_markers = ("серіал", "сериал", "series", "serial")
+    url_markers = ("/films/", "/film/", "/movies/", "/series/", "/vod/", "/kino/")
+    is_movie = has_any(hay, movie_markers) or any(marker in url.casefold() for marker in url_markers)
+    is_series = has_any(hay, series_markers)
 
-    detected_country = country_for(hay)
-    if detected_country:
-        return f"ТБ | {detected_country}"
-    if group and group.casefold() not in {"default", "undefined", "none"}:
-        return f"ТБ | {group}"
-    return "ТБ | Інші"
+    if is_movie:
+        return f"Фільми | {genre_for(hay)}"
+    if is_series:
+        return f"Серіали | {genre_for(hay)}"
+
+    for category, words in CATEGORY_RULES:
+        if category in ("Аніме", "Мультфільми", "Дитячі", "Кіно", "Радіо"):
+            continue
+        if has_any(hay, words):
+            return category
+
+    # Preserve meaningful source genre/group names rather than guessing a country.
+    if compact_group and compact_group not in {"default", "undefined", "none", "other", "others", "разное", "різне"}:
+        return group.strip()
+    return "Інше"
 
 
 def rewrite_extinf(extinf: str, category: str) -> str:
@@ -156,34 +156,39 @@ def organize(source: str) -> tuple[str, Counter[str]]:
 
 
 def download() -> str:
-    request = urllib.request.Request(SOURCE_URL, headers={"User-Agent": "IPTV-Playlist-Organizer/2.0"})
+    request = urllib.request.Request(SOURCE_URL, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; IPTV-Organizer/3.0)",
+        "Accept": "application/vnd.apple.mpegurl, audio/x-mpegurl, text/plain, */*",
+    })
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
         raw = response.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
-        raise ValueError("Плейлист перевищує ліміт 100 МБ")
+        raise ValueError(f"Плейлист завеликий: понад {MAX_BYTES // (1024 * 1024)} МБ")
     decoded = raw.decode("utf-8-sig", errors="replace")
-    if "#EXTM3U" not in decoded[:200]:
-        raise ValueError("Джерело не схоже на M3U-плейлист")
+    if not decoded.lstrip().startswith("#EXTM3U"):
+        raise ValueError("Джерело не повернуло коректний M3U-файл (очікувався #EXTM3U)")
     return decoded
 
 
 def main() -> int:
     temp_name: str | None = None
     try:
-        result, counts = organize(download())
+        source = download()
+        result, counts = organize(source)
         OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="\n", dir=OUTPUT_FILE.parent, delete=False) as temp:
             temp.write(result)
             temp_name = temp.name
         os.replace(temp_name, OUTPUT_FILE)
-        print(f"Збережено: {OUTPUT_FILE}; позицій: {sum(counts.values())}")
+        total = sum(counts.values())
+        print(f"Успішно: {OUTPUT_FILE}; каналів/позицій: {total}; категорій: {len(counts)}")
         for category, count in sorted(counts.items(), key=lambda item: item[0].casefold()):
             print(f"{category}: {count}")
         return 0
     except Exception as exc:
         if temp_name and os.path.exists(temp_name):
             os.unlink(temp_name)
-        print(f"Помилка формування плейлиста: {exc}", file=sys.stderr)
+        print(f"Помилка формування плейлиста: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
 
