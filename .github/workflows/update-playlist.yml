@@ -2,9 +2,11 @@ name: Update sorted IPTV playlist
 
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'organize_playlist.py'
       - '.github/workflows/update-playlist.yml'
@@ -23,25 +25,31 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Generate sorted playlist
+      - name: Generate genre-sorted playlist
         run: python organize_playlist.py
-      - name: Verify generated playlist
+      - name: Validate generated playlist
+        shell: bash
         run: |
+          set -euo pipefail
           test -s dist/iptv-sorted.m3u
           grep -q '^#EXTM3U' dist/iptv-sorted.m3u
-          grep -q '^#EXTINF:' dist/iptv-sorted.m3u
-      - name: Commit updated playlist
+          entries="$(grep -c '^#EXTINF:' dist/iptv-sorted.m3u)"
+          echo "Generated entries: $entries"
+          test "$entries" -ge 1000
+      - name: Publish updated playlist
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add dist/iptv-sorted.m3u
           if ! git diff --cached --quiet; then
-            git commit -m "chore: update sorted IPTV playlist"
-            git push
+            git commit -m "chore: update genre-sorted IPTV playlist"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           else
             echo 'Playlist has no changes.'
           fi
