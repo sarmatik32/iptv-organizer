@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import concurrent.futures
 import sys
 import tempfile
 import urllib.request
@@ -13,6 +14,8 @@ from pathlib import Path
 SOURCE_URL = os.getenv("SOURCE_URL", "https://raw.githubusercontent.com/slava-67/TV/IPTV/avto-full.m3u")
 OUTPUT_FILE = Path(os.getenv("OUTPUT_FILE", "dist/iptv-sorted.m3u"))
 TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "120"))
+PROBE_TIMEOUT = float(os.getenv("PROBE_TIMEOUT", "5"))
+PROBE_WORKERS = max(1, min(16, int(os.getenv("PROBE_WORKERS", "8"))))
 MAX_BYTES = 150 * 1024 * 1024
 
 GENRES = [
@@ -147,10 +150,7 @@ def rewrite_extinf(extinf: str, category: str) -> str:
     return extinf if comma < 0 else extinf[:comma] + f' group-title="{category}"' + extinf[comma:]
 
 def quality_for(extinf: str, group: str, name: str, url: str) -> str:
-    """
-    Mark a stream as HD only when the source explicitly indicates HD quality.
-    Unknown quality is intentionally placed in the non-HD section.
-    """
+    """Use explicit source markers; unknown quality is conservatively labeled SD."""
     value = f"{extinf} {group} {name} {url}".casefold()
     hd_patterns = (
         r"\b(?:4k|8k|uhd|ultra[ ._-]?hd|fhd|full[ ._-]?hd)\b",
@@ -158,25 +158,106 @@ def quality_for(extinf: str, group: str, name: str, url: str) -> str:
         r"(?:^|[\s._/?=&-])hd(?:$|[\s._/?&#=-])",
         r"high[ ._-]?definition",
     )
-    return "HD" if any(re.search(pattern, value, re.I) for pattern in hd_patterns) else "Не HD"
+    return "HD" if any(re.search(pattern, value, re.I) for pattern in hd_patterns) else "SD"
+
+
+def probe_stream(url: str) -> tuple[str, str]:
+    """Return stream type and seekability using HLS markers or HTTP byte ranges."""
+    lower = url.casefold()
+    if ".m3u8" in lower:
+        request = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; IPTV-Organizer/3.2)",
+            "Accept": "application/vnd.apple.mpegurl, application/x-mpegURL, */*",
+            "Range": "bytes=0-1048575",
+        })
+        try:
+            with urllib.request.urlopen(request, timeout=PROBE_TIMEOUT) as response:
+                body = response.read(1024 * 1024 + 1).decode("utf-8-sig", errors="replace")
+            if not body.lstrip().startswith("#EXTM3U"):
+                return "UNKNOWN", "unknown"
+            if "#EXT-X-ENDLIST" in body or "#EXT-X-PLAYLIST-TYPE:VOD" in body:
+                return "VOD", "yes"
+            if len(body.encode("utf-8")) <= 1024 * 1024:
+                return "LIVE", "no"
+            return "UNKNOWN", "unknown"
+        except Exception:
+            return "UNKNOWN", "unknown"
+
+    if re.search(r"\.(?:mp4|m4v|mkv|avi|mov|webm)(?:$|[?#])", lower):
+        request = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; IPTV-Organizer/3.2)",
+            "Range": "bytes=0-0",
+        })
+        try:
+            with urllib.request.urlopen(request, timeout=PROBE_TIMEOUT) as response:
+                seekable = response.status == 206 or response.headers.get("Accept-Ranges", "").casefold() == "bytes"
+                return ("VOD", "yes") if seekable else ("UNKNOWN", "no")
+        except Exception:
+            return "UNKNOWN", "unknown"
+    return "UNKNOWN", "unknown"
+
+
+def initial_stream_type(group: str, name: str, category: str, url: str) -> str:
+    value = f"{group} {name} {url}".casefold()
+    if re.search(r"/(?:live|livetv|channel|channels)(?:/|$)|[?&](?:type|mode)=live\b", value):
+        return "LIVE"
+    if re.search(r"/(?:movie|movies|film|films|vod|series|episode|episodes)(?:/|$)", value):
+        return "VOD"
+    if category.startswith(("Фільми |", "Серіали |")):
+        return "VOD"
+    if category in {
+        "ТБ | Загальні", "Спорт", "Новини", "Музика", "Радіо",
+        "Розважальні", "Пізнавальні", "Кулінарія", "Кіно та серіали",
+    }:
+        return "LIVE"
+    return "UNKNOWN"
 
 
 def organize(source: str) -> tuple[str, Counter[str]]:
     header, entries = parse_entries(source)
     if not entries:
         raise ValueError("У вихідному M3U не знайдено жодного запису")
-    grouped: dict[str, list[tuple[str, str, str]]] = {}
+
+    prepared = []
+    probe_urls = set()
     for extinf, url in entries:
         group, name = metadata(extinf)
+        base_category = classify(group, name, url)
+        stream_type = initial_stream_type(group, name, base_category, url)
+        if ".m3u8" in url.casefold() or re.search(r"\.(?:mp4|m4v|mkv|avi|mov|webm)(?:$|[?#])", url, re.I):
+            probe_urls.add(url)
+        prepared.append((extinf, url, group, name, base_category, stream_type))
+
+    probe_results = {}
+    if probe_urls:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=PROBE_WORKERS) as executor:
+            futures = {executor.submit(probe_stream, url): url for url in probe_urls}
+            for future in concurrent.futures.as_completed(futures):
+                url = futures[future]
+                try:
+                    probe_results[url] = future.result()
+                except Exception:
+                    probe_results[url] = ("UNKNOWN", "unknown")
+
+    grouped: dict[str, list[tuple[str, str, str]]] = {}
+    for extinf, url, group, name, base_category, stream_type in prepared:
+        probed_type, seekability = probe_results.get(url, ("UNKNOWN", "unknown"))
+        if probed_type in {"LIVE", "VOD"}:
+            stream_type = probed_type
         quality = quality_for(extinf, group, name, url)
-        category = f"{quality} | {classify(group, name, url)}"
-        grouped.setdefault(category, []).append((name.casefold(), rewrite_extinf(extinf, category), url))
+        category = f"{quality} | {stream_type} | {base_category}"
+        rewritten = rewrite_extinf(extinf, category)
+        grouped.setdefault(category, []).append((name.casefold(), rewritten, url))
+
     output = [header]
     counts: Counter[str] = Counter()
-    quality_order = {"HD": 0, "Не HD": 1}
-    def sort_category(category: str) -> tuple[int, str]:
-        quality, _, subcategory = category.partition(" | ")
-        return quality_order.get(quality, 2), subcategory.casefold()
+    quality_order = {"HD": 0, "SD": 1}
+    type_order = {"LIVE": 0, "VOD": 1, "UNKNOWN": 2}
+
+    def sort_category(category: str) -> tuple[int, int, str]:
+        quality, stream_type, subcategory = category.split(" | ", 2)
+        return quality_order.get(quality, 2), type_order.get(stream_type, 3), subcategory.casefold()
+
     for category in sorted(grouped, key=sort_category):
         output.append(f"\n# ===== {category} ({len(grouped[category])}) =====")
         for _, extinf, url in sorted(grouped[category], key=lambda item: item[0]):
