@@ -19,7 +19,8 @@ MAX_BYTES = 150 * 1024 * 1024
 GENRES = [
     ("Бойовики", ("бойовик", "боевик", "action", "екшн", "приключенческий боевик")),
     ("Комедії", ("комеді", "комеди", "comedy", "юмор", "sitcom", "ситком")),
-    ("Драми", ("драма", "drama", "мелодрама", "melodrama")),
+    ("Мелодрами та романтика", ("мелодрам", "melodrama", "романтик", "romance", "любов")),
+    ("Драми", ("драма", "drama")),
     ("Трилери", ("трилер", "триллер", "thriller", "suspense")),
     ("Жахи", ("жах", "ужас", "horror", "страшилки")),
     ("Фантастика", ("фантаст", "sci-fi", "science fiction", "научная фантастика")),
@@ -117,6 +118,10 @@ def classify(group: str, name: str, url: str, extinf: str) -> str:
     if is_series:
         return f"Серіали | {genre_for(hay)}"
 
+    # A source group named only after a movie genre (e.g. "Боевики") is a movie genre.
+    if genre_for(group.casefold()) != "Інші жанри":
+        return f"Фільми | {genre_for(group.casefold())}"
+
     for category, words in CATEGORY_RULES:
         if category in ("Аніме", "Мультфільми", "Дитячі", "Кіно", "Радіо"):
             continue
@@ -125,8 +130,18 @@ def classify(group: str, name: str, url: str, extinf: str) -> str:
 
     # Preserve meaningful source genre/group names rather than guessing a country.
     if compact_group and compact_group not in {"default", "undefined", "none", "other", "others", "разное", "різне"}:
-        return group.strip()
-    return "Інше"
+        country_only = {
+            "ua", "ukr", "ukraine", "украина", "україна", "us", "usa", "сша",
+            "uk", "united kingdom", "великобритания", "велика британія",
+            "de", "germany", "германия", "німеччина", "pl", "poland", "польша", "польща",
+            "fr", "france", "франция", "франція", "it", "italy", "италия", "італія",
+            "es", "spain", "испания", "іспанія", "tr", "turkey", "турция", "туреччина",
+            "ca", "canada", "канада", "ro", "romania", "румыния", "румунія",
+            "cz", "czech", "чехия", "чехія", "nl", "netherlands", "нидерланды", "нідерланди",
+        }
+        if compact_group not in country_only:
+            return group.strip()
+    return "Загальні телеканали"
 
 
 def rewrite_extinf(extinf: str, category: str) -> str:
