@@ -228,8 +228,9 @@ def organize(source: str) -> tuple[str, Counter[str]]:
         group, name = metadata(extinf)
         base_category = classify(group, name, url)
         stream_type = initial_stream_type(group, name, base_category, url)
-        if ".m3u8" in url.casefold() or re.search(r"\.(?:mp4|m4v|mkv|avi|mov|webm)(?:$|[?#])", url, re.I):
-            probe_urls.add(url)
+        if (".m3u8" in url.casefold() or re.search(r"\.(?:mp4|m4v|mkv|avi|mov|webm)(?:$|[?#])", url, re.I)) and url not in seen_probe_urls:
+            seen_probe_urls.add(url)
+            probe_candidates.append(url)
         prepared.append((extinf, url, group, name, base_category, stream_type))
 
     probe_urls = probe_candidates[:PROBE_LIMIT]
