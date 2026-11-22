@@ -1,40 +1,51 @@
 # IPTV Organizer
 
-Automatically downloads the source M3U, classifies entries, sorts them and publishes `dist/iptv-sorted.m3u` in this repository.
+Automatic M3U playlist downloader and genre sorter.
 
 ## Categories
 
-- TV grouped by country where country metadata is available.
-- Movies grouped by country and genre, for example `Фільми | США | Бойовики`.
-- Separate groups for cartoons, kids, music, news, sports, radio and regional channels.
-- Unknown or incomplete metadata is retained in fallback groups; stream URLs and source EXTINF metadata are preserved.
+The playlist is grouped by content, **not by country**:
 
-Classification uses `tvg-country`, `country`, the source group title, display name and selected URL path patterns. It is heuristic: missing or ambiguous source metadata may result in an unknown-country or unknown-genre group.
+- Films: action, comedy, drama, thriller, horror, science fiction, fantasy, detective/crime, adventure, romance, historical/war, documentary, biography and other genres.
+- Series: the same genre groups.
+- Cartoons, anime and kids.
+- Music, sport, news, educational, entertainment and radio.
+- Original meaningful source group names are retained as a fallback; unknown entries go to "Інше".
 
-## Output URL
+The sorter intentionally ignores `tvg-country`, country names and country codes.
+
+## Permanent M3U URL
 
 `https://raw.githubusercontent.com/sarmatik32/iptv-organizer/main/dist/iptv-sorted.m3u`
 
+The link becomes available after the first successful GitHub Actions run.
+
 ## Automatic updates
 
-GitHub Actions downloads and rebuilds the playlist every six hours (cron: `17 */6 * * *`, UTC). A manual run is also available under **Actions → Update sorted IPTV playlist → Run workflow**.
+GitHub Actions runs every six hours (UTC) and can also be started manually:
 
-For the first run, confirm **Settings → Actions → General → Workflow permissions → Read and write permissions**. The workflow declares `contents: write` and needs permission to commit the generated file.
+**Actions → Update sorted IPTV playlist → Run workflow**
 
-## Configuration
+Workflow permissions required:
+
+**Settings → Actions → General → Workflow permissions → Read and write permissions**
+
+The workflow verifies the generated M3U before committing it. A failed download or invalid source fails the job and does not replace the last valid playlist.
+
+## Source
 
 Default source:
 
 `https://raw.githubusercontent.com/slava-67/TV/IPTV/avto-full.m3u`
 
-To change it, add a repository Actions variable named `SOURCE_URL`. The download timeout defaults to 90 seconds and input is limited to 100 MiB. No third-party Python packages are required.
+Optional repository Actions variable: `SOURCE_URL`.
 
-## Local run
+## Local execution
 
-Requires Python 3.10+:
+Python 3.10+; no external dependencies:
 
 ```bash
 python organize_playlist.py
 ```
 
-Generated file: `dist/iptv-sorted.m3u`.
+Output: `dist/iptv-sorted.m3u`.
