@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download and organize an M3U playlist into stable, human-readable groups."""
+"""Download and organize an M3U playlist into stable, human-readable groups. Version 2.1."""
 from __future__ import annotations
 
 import os
