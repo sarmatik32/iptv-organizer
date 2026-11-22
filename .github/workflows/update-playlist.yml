@@ -29,6 +29,11 @@ jobs:
           python-version: '3.12'
       - name: Generate sorted playlist
         run: python organize_playlist.py
+      - name: Verify generated playlist
+        run: |
+          test -s dist/iptv-sorted.m3u
+          grep -q '^#EXTM3U' dist/iptv-sorted.m3u
+          grep -q '^#EXTINF:' dist/iptv-sorted.m3u
       - name: Commit updated playlist
         run: |
           git config user.name 'github-actions[bot]'
