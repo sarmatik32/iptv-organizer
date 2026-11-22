@@ -153,9 +153,9 @@ def quality_for(extinf: str, group: str, name: str, url: str) -> str:
     """
     value = f"{extinf} {group} {name} {url}".casefold()
     hd_patterns = (
-        r"\\b(?:4k|8k|uhd|ultra[ ._-]?hd|fhd|full[ ._-]?hd)\\b",
-        r"\\b(?:2160|1440|1080|720)[pi]?\\b",
-        r"(?:^|[\\s._/?=&-])hd(?:$|[\\s._/?&#=-])",
+        r"\b(?:4k|8k|uhd|ultra[ ._-]?hd|fhd|full[ ._-]?hd)\b",
+        r"\b(?:2160|1440|1080|720)[pi]?\b",
+        r"(?:^|[\s._/?=&-])hd(?:$|[\s._/?&#=-])",
         r"high[ ._-]?definition",
     )
     return "HD" if any(re.search(pattern, value, re.I) for pattern in hd_patterns) else "Не HD"
@@ -178,11 +178,11 @@ def organize(source: str) -> tuple[str, Counter[str]]:
         quality, _, subcategory = category.partition(" | ")
         return quality_order.get(quality, 2), subcategory.casefold()
     for category in sorted(grouped, key=sort_category):
-        output.append(f"\\n# ===== {category} ({len(grouped[category])}) =====")
+        output.append(f"\n# ===== {category} ({len(grouped[category])}) =====")
         for _, extinf, url in sorted(grouped[category], key=lambda item: item[0]):
             output.extend((extinf, url))
             counts[category] += 1
-    return "\\n".join(output) + "\\n", counts
+    return "\n".join(output) + "\n", counts
 
 def download() -> str:
     request = urllib.request.Request(SOURCE_URL, headers={
