@@ -49,7 +49,8 @@ jobs:
           git add dist/iptv-sorted.m3u
           if ! git diff --cached --quiet; then
             git commit -m "chore: update genre-sorted IPTV playlist"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
           else
             echo 'Playlist has no changes.'
           fi
