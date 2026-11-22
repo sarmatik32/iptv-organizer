@@ -34,7 +34,7 @@ GENRES = [
     ("Музичні", ("музичн", "музыкальн", "music", "concert", "концерт")),
 ]
 
-MOVIE_GROUP = re.compile(r"(фильм|фільм|кино\\s*зал|kino\\s*zal|кинозал|kino\\+|4k\\s*kino)", re.I)
+MOVIE_GROUP = re.compile(r"(фильм|фільм|кино\s*зал|kino\s*zal|кинозал|kino\+|4k\s*kino)", re.I)
 COUNTRY_GROUP = {
     "ua", "ukr", "ukraine", "украина", "україна", "us", "usa", "сша",
     "uk", "united kingdom", "великобритания", "велика британія",
@@ -56,7 +56,7 @@ def genre_for(value: str) -> str:
     return "Інші жанри"
 
 def parse_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
-    lines = text.lstrip("\\ufeff").splitlines()
+    lines = text.lstrip("\ufeff").splitlines()
     header = lines[0].strip() if lines and lines[0].startswith("#EXTM3U") else "#EXTM3U"
     entries: list[tuple[str, str]] = []
     pending: list[str] = []
@@ -70,13 +70,13 @@ def parse_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
             if pending:
                 pending.append(line)
         elif pending:
-            entries.append(("\\n".join(pending), line))
+            entries.append(("\n".join(pending), line))
             pending = []
     return header, entries
 
 def metadata(extinf: str) -> tuple[str, str]:
     match = re.search(r'group-title="([^"]*)"', extinf, re.I)
-    group = re.sub(r"\\s+", " ", match.group(1).strip()) if match else ""
+    group = re.sub(r"\s+", " ", match.group(1).strip()) if match else ""
     name = extinf.split(",", 1)[1].strip() if "," in extinf else "Без назви"
     return group, name
 
@@ -145,11 +145,11 @@ def organize(source: str) -> tuple[str, Counter[str]]:
     output = [header]
     counts: Counter[str] = Counter()
     for category in sorted(grouped, key=str.casefold):
-        output.append(f"\\n# ===== {category} ({len(grouped[category])}) =====")
+        output.append(f"\n# ===== {category} ({len(grouped[category])}) =====")
         for _, extinf, url in sorted(grouped[category], key=lambda item: item[0]):
             output.extend((extinf, url))
             counts[category] += 1
-    return "\\n".join(output) + "\\n", counts
+    return "\n".join(output) + "\n", counts
 
 def download() -> str:
     request = urllib.request.Request(SOURCE_URL, headers={
@@ -170,7 +170,7 @@ def main() -> int:
     try:
         result, counts = organize(download())
         OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="\\n", dir=OUTPUT_FILE.parent, delete=False) as temp:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="\n", dir=OUTPUT_FILE.parent, delete=False) as temp:
             temp.write(result)
             temp_name = temp.name
         os.replace(temp_name, OUTPUT_FILE)
