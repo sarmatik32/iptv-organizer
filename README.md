@@ -4,14 +4,17 @@ Automatically downloads the source M3U and publishes a sorted playlist at `dist/
 
 ## Sorting
 
-The playlist is grouped by content type and genre, **not by country**:
+The playlist is first split into **HD** and **Не HD**, then grouped by content type and genre inside each quality section. Countries are not used for sorting:
+
+- `HD | ...` — streams explicitly marked as HD, Full HD, 720p/1080p/1440p/2160p, 4K, 8K or UHD.
+- `Не HD | ...` — streams without an explicit HD quality marker. Unknown quality is placed here rather than being guessed.
 
 - Films: action, comedy, drama, thriller, horror, science fiction, fantasy, detective/crime, adventure, romance, historical/war, documentary, biography, western, family, music and other genres.
 - Series: genre groups.
 - Separate categories: cartoons, anime, kids, 18+, cinema channels, music, sports, news, educational, entertainment, cooking, radio and general TV.
 - Country-only source groups are merged into general TV. Country metadata is never used as an output category.
 
-The source sometimes provides only a film title and year, without a genre tag. Such entries are kept in `Фільми | Інші жанри`; the organizer does not invent genres.
+The same genre and channel categories are created independently under both quality groups. The source sometimes provides only a film title and year, without a genre tag. Such entries are kept in `Фільми | Інші жанри`; the organizer does not invent genres.
 
 ## Permanent M3U URL
 
