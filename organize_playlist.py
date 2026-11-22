@@ -177,6 +177,8 @@ def probe_stream(url: str) -> tuple[str, str]:
                 return "UNKNOWN", "unknown"
             if "#EXT-X-ENDLIST" in body or "#EXT-X-PLAYLIST-TYPE:VOD" in body:
                 return "VOD", "yes"
+            if "#EXT-X-STREAM-INF" in body or "#EXT-X-MEDIA:" in body:
+                return "UNKNOWN", "unknown"
             if len(body.encode("utf-8")) <= 1024 * 1024:
                 return "LIVE", "no"
             return "UNKNOWN", "unknown"
@@ -242,8 +244,10 @@ def organize(source: str) -> tuple[str, Counter[str]]:
     grouped: dict[str, list[tuple[str, str, str]]] = {}
     for extinf, url, group, name, base_category, stream_type in prepared:
         probed_type, seekability = probe_results.get(url, ("UNKNOWN", "unknown"))
-        if url in probe_results:
+        if probed_type in {"LIVE", "VOD"}:
             stream_type = probed_type
+        elif url in probe_results and re.search(r"\.(?:mp4|m4v|mkv|avi|mov|webm)(?:$|[?#])", url, re.I):
+            stream_type = "UNKNOWN"
         quality = quality_for(extinf, group, name, url)
         seek_label = "так" if seekability == "yes" else "не підтверджено"
         vod_seek_group = f" | Перемотування: {seek_label}" if stream_type == "VOD" else ""
