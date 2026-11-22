@@ -44,6 +44,7 @@ Optional Actions variable: `SOURCE_URL`.
 Optional probe settings:
 - `PROBE_TIMEOUT` — per-stream probe timeout in seconds (default: `5`).
 - `PROBE_WORKERS` — concurrent probes, clamped to 1–16 (default: `8`).
+- `PROBE_LIMIT` — maximum number of unique streams actively checked per refresh (default: `300`).
 
 ## Local execution
 
