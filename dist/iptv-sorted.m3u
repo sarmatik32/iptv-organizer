@@ -3813,7 +3813,7 @@ https://ext.cdn.nashnet.tv/228.0.0.41/index.m3u8
 #EXTINF:-1 group-title="SD | LIVE | Спорт",Футбол
 http://195.64.140.147:10107/107
 
-# ===== SD | LIVE | ТБ | Загальні (548) =====
+# ===== SD | LIVE | ТБ | Загальні (549) =====
 #EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",.Black
 http://195.64.140.147:10087/87
 #EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",.RED
@@ -4055,6 +4055,8 @@ http://91.205.196.7:8000/play/a002
 http://live.cdn-vizi.workers.dev/?ID=109
 #EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні", JimJam
 http://176.118.197.125/JimJam/index.m3u8
+#EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",Jurnal TV
+http://91.235.165.117:8002/play/a070/index.m3u8
 #EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",Kapaz TV
 http://85.132.78.122:8050/hls/stream/index.m3u8
 #EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",Karcag TV
@@ -4927,7 +4929,7 @@ http://45.11.139.43:8555/geghama/index.m3u8
 http://5.188.172.179/Shant/index.m3u8
 #EXTINF:-1 tvg-id="AM: ATV Fitness" tvg-logo="https://mytv.do.am/logo/fitnes.png" group-title="SD | LIVE | ТБ | Загальні",Ֆիթնես TV
 http://45.11.139.43:8555/fitnes/index.m3u8
-#EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",🛠Ревизия №-1 🚦22.11.2026|04-40|👍iptv.org.ua|tva.org.ua|tva.in.ua|fas-tv.com|mater.com.ua💰
+#EXTINF:-1 group-title="SD | LIVE | ТБ | Загальні",🛠Ревизия №-1 🚦24.11.2026|12-50|👍iptv.org.ua|tva.org.ua|tva.in.ua|fas-tv.com|mater.com.ua💰
 http://cdn10.live-tv.od.ua:8081/leonovtv/test-abr/playlist.m3u8
 
 # ===== SD | LIVE | Фільми | Інші жанри (1) =====
